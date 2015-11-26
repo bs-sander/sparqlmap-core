@@ -46,31 +46,27 @@ public class DBAccess {
 	private Connector dbConnector;
 
 
-	public com.hp.hpl.jena.query.ResultSet executeSQL(TranslationContext context, String baseUri) throws SQLException{
+	public DeUnionResultWrapper executeSQL(TranslationContext context, String baseUri) throws SQLException {
 		context.profileStartPhase("Connection Acquisition");
-		Connection connect  = dbConnector.getConnection();
+		Connection connect = dbConnector.getConnection();
 		java.sql.Statement stmt = connect.createStatement();
-		
-		
-		
-		if(log.isDebugEnabled()){
-			log.debug("Executing translated Query: " +  context.getSqlQuery());
+		connect.setAutoCommit(false);
+		stmt.setFetchSize(500);
+
+		if (log.isDebugEnabled()) {
+			log.debug("Executing translated Query: " + context.getSqlQuery());
 		}
-		context.profileStartPhase("Query Execution");
-		com.hp.hpl.jena.query.ResultSet wrap;
+		DeUnionResultWrapper wrap;
 		try {
 			ResultSet rs = stmt.executeQuery(context.getSqlQuery());
-			
-			wrap = new DeUnionResultWrapper(new  SQLResultSetWrapper(rs, connect,
-					dataTypeHelper, baseUri, context));
+			wrap = new DeUnionResultWrapper(new SQLResultSetWrapper(rs, connect, dataTypeHelper, baseUri, context));
 		} catch (SQLException e) {
 			log.error("Error executing Query: " + context.getSqlQuery());
 			throw new SQLException(e);
 		}
-		
-		return  wrap;
-	}
 
+		return wrap;
+	}
 
 
 

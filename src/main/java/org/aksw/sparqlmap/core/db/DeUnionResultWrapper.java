@@ -165,6 +165,13 @@ public class DeUnionResultWrapper implements ResultSet{
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	public void close() {
+		srs.close();
+		suffix2duvar.clear();
+		non_du_var.clear();
+		vars.clear();
+	}
 	
 
 	

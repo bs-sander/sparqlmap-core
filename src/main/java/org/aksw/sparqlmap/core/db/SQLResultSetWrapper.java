@@ -368,12 +368,11 @@ public class SQLResultSetWrapper implements com.hp.hpl.jena.query.ResultSet {
     tcontext.profileStop();
 
     try {
-      if (rs.isClosed() == false) {
+      if (!rs.isClosed()) {
         rs.close();
         conn.close();
       }
     } catch (Throwable e) {
-      // TODO Auto-generated catch block
       log.error("Error:", e);
     }
   }

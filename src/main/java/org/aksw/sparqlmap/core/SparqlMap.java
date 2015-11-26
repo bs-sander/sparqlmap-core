@@ -1,8 +1,6 @@
 package org.aksw.sparqlmap.core;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.sql.SQLException;
@@ -17,6 +15,7 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 
 import org.aksw.sparqlmap.core.db.DBAccess;
+import org.aksw.sparqlmap.core.db.DeUnionResultWrapper;
 import org.aksw.sparqlmap.core.mapper.Mapper;
 import org.aksw.sparqlmap.core.r2rml.R2RML;
 import org.aksw.sparqlmap.core.r2rml.R2RMLModel;
@@ -40,14 +39,12 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.sparql.algebra.OpVars;
 import com.hp.hpl.jena.sparql.core.DatasetGraph;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.graph.GraphFactory;
-import com.hp.hpl.jena.sparql.resultset.ResultSetMem;
 import com.hp.hpl.jena.sparql.resultset.ResultsFormat;
 import com.hp.hpl.jena.sparql.syntax.Template;
 
@@ -380,25 +377,25 @@ public class SparqlMap {
     PrintStream writer = new PrintStream(out);
 
     List<TranslationContext> contexts = mapper.dump();
+    DatasetGraph graph = DatasetGraphFactory.createMem();
     for (TranslationContext context : contexts) {
-
+    	graph.clear();
       log.info("SQL: " + context.getSqlQuery());
-      com.hp.hpl.jena.query.ResultSet rs = dbConf.executeSQL(context, baseUri);
-      DatasetGraph graph = DatasetGraphFactory.createMem();
+      DeUnionResultWrapper rs = dbConf.executeSQL(context, baseUri);
       int i = 0;
+
       while (rs.hasNext()) {
-      
         Binding bind = rs.nextBinding();
         addDumpBindingToDataset(bind, graph);
           
-        if (++i % 10000 == 0) {
+        if (++i % 1000 == 0) {
           RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
-          graph.deleteAny(null, null, null, null);
+          graph.clear();
         }
       }
       RDFDataMgr.write(out, graph, RDFFormat.NQUADS);
-    
 
+      rs.close();
       writer.flush();
     }
   }
@@ -411,7 +408,6 @@ public class SparqlMap {
 	 */
 
 	public DatasetGraph dump() throws SQLException {
-
 		DatasetGraph dataset = DatasetGraphFactory.createMem();
 
 		List<TranslationContext> contexts = mapper.dump();
